@@ -153,6 +153,9 @@ fn simple_decode(encoded_buffer: &[u8], decoded_buffer: &mut Vec<u8>) {
 fn find_delimiter(buffer: &[u8]) -> Result<usize, SlipError> {
   for (i, _) in buffer.iter().enumerate() {
     if buffer[i] == END {
+      if i == buffer.len() - 1 {
+        return Err(SlipError::NoEndDelimiter);
+      }
       if buffer[i + 1] == END {
         return Ok(i + 1);
       } else {
@@ -181,6 +184,9 @@ fn find_last_delimiter(buffer: &[u8]) -> Result<usize, SlipError> {
   for (i, _) in buffer.iter().rev().enumerate() {
     let idx = (buffer.len() - 1) - i;
     if buffer[idx] == END {
+      if idx == 0 {
+        return Err(SlipError::NoEndDelimiter);
+      }
       if buffer[idx - 1] == END {
         return Ok(idx - 1);
       } else {
@@ -268,6 +274,20 @@ mod tests {
   fn errors_when_no_delimiter() {
     let error_input: [u8; 10] = [
       0xA1, 0xA2, 0xA3, 0x01, ESC, ESC_ESC, 0x49, ESC, ESC_END, 0x15,
+    ];
+    assert!(decode(&error_input).is_err());
+  }
+  #[test]
+  fn errors_when_only_delimiter() {
+    let error_input = [
+      END,
+    ];
+    assert!(decode(&error_input).is_err());
+  }
+  #[test]
+  fn errors_when_missing_end_delimiter() {
+    let error_input = [
+      END, 0x01, 0x02
     ];
     assert!(decode(&error_input).is_err());
   }
